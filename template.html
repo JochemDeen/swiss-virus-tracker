@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swiss Flu Tracker</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --plane:          #f9f9f7;
+  --surface:        #fcfcfb;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --muted:          #898781;
+  --grid:           #e1e0d9;
+  --axis:           #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+  --series-1:       #2a78d6;
+  --series-2:       #eb6834;
+  --band:           rgba(137,135,129,0.14);
+  --st-baseline:    #898781;
+  --st-good:        #0ca30c;
+  --st-warning:     #fab219;
+  --st-serious:     #ec835a;
+  --st-critical:    #d03b3b;
+  --up:             #006300;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --plane:          #0d0d0d;
+    --surface:        #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted:          #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --band:           rgba(137,135,129,0.18);
+    --up:             #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  --plane:#0d0d0d; --surface:#1a1a19; --text-primary:#fff; --text-secondary:#c3c2b7;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --series-1:#3987e5; --series-2:#d95926; --band:rgba(137,135,129,0.18); --up:#0ca30c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--plane); color: var(--text-primary);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1060px; margin: 0 auto; padding: 28px 20px 56px; }
+h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 14px; margin: 0 0 2px; font-weight: 600; }
+.sub { color: var(--text-secondary); font-size: 13px; margin: 0; }
+.muted { color: var(--muted); }
+a { color: var(--series-1); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+header { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between;
+         align-items: flex-start; margin-bottom: 20px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+        padding: 18px; margin-bottom: 16px; }
+.card-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between;
+             align-items: baseline; margin-bottom: 14px; }
+
+/* --- hero ------------------------------------------------------------- */
+.hero { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 28px; align-items: center; }
+@media (max-width: 720px) { .hero { grid-template-columns: 1fr; gap: 20px; } }
+.badge { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px;
+         padding: 4px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: none; }
+.hero-num { font-size: 52px; line-height: 1.05; font-weight: 650; letter-spacing: -0.02em;
+            margin: 10px 0 2px; }
+.hero-unit { font-size: 15px; font-weight: 400; color: var(--text-secondary); margin-left: 4px; }
+.trend { font-size: 13px; color: var(--text-secondary); }
+
+/* --- stage meter ------------------------------------------------------ */
+.meter { position: relative; }
+.meter-bands { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.meter-band { height: 12px; border-radius: 2px; opacity: 0.30; }
+.meter-band.on { opacity: 1; }
+.meter-labels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+                margin-top: 6px; font-size: 11px; color: var(--muted); }
+.meter-labels span { display: block; overflow-wrap: anywhere; }
+@media (max-width: 460px) { .meter-labels { font-size: 10px; } .meter-labels b { font-size: 10px; } }
+.meter-labels b { display: block; color: var(--text-secondary); font-weight: 600; font-size: 11px; }
+.marker { position: absolute; top: -13px; transform: translateX(-50%);
+          font-size: 11px; white-space: nowrap; color: var(--text-primary); font-weight: 600; }
+.marker::after { content: ""; position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+          border: 5px solid transparent; border-top-color: var(--text-primary); }
+
+/* --- tiles ------------------------------------------------------------ */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;
+         margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .k { font-size: 12px; color: var(--text-secondary); }
+.tile .v { font-size: 26px; font-weight: 650; letter-spacing: -0.01em; margin: 4px 0 1px; }
+.tile .n { font-size: 11.5px; color: var(--muted); }
+
+/* --- filters ---------------------------------------------------------- */
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+label.f { font-size: 12.5px; color: var(--text-secondary); }
+select { font: inherit; font-size: 13px; padding: 5px 9px; border-radius: 7px;
+         border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); }
+
+/* --- charts ----------------------------------------------------------- */
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--text-secondary); }
+.legend i { display: inline-block; width: 11px; height: 3px; border-radius: 2px;
+            vertical-align: middle; margin-right: 6px; }
+.legend i.sq { height: 10px; width: 10px; border-radius: 2px; }
+.tip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+       background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+       padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.14);
+       min-width: 128px; z-index: 5; }
+.tip .t { font-weight: 650; margin-bottom: 5px; }
+.tip .r { display: flex; justify-content: space-between; gap: 14px; line-height: 1.7; }
+.tip .r span:last-child { font-variant-numeric: tabular-nums; }
+
+/* --- tables ----------------------------------------------------------- */
+details { margin-top: 12px; }
+summary { cursor: pointer; font-size: 12.5px; color: var(--text-secondary); }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 10px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--grid);
+         font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+th { color: var(--text-secondary); font-weight: 600; }
+.scroll { overflow-x: auto; }
+.tbl-wrap { max-height: 360px; overflow: auto; }
+#t-cantons { max-height: none; }
+.grid2 > .card { align-self: start; }
+.grid2 > .card, .tiles > .tile, header > div { min-width: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 780px) { .grid2 { grid-template-columns: 1fr; } }
+.bar { height: 6px; border-radius: 3px; background: var(--series-1); display: inline-block;
+       vertical-align: middle; min-width: 2px; }
+.barcell { width: 32%; }
+footer { color: var(--muted); font-size: 12px; line-height: 1.7; margin-top: 8px; }
+footer h3 { font-size: 12.5px; color: var(--text-secondary); margin: 16px 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>Swiss Flu Tracker</h1>
+    <p class="sub" id="strap"></p>
+  </div>
+  <p class="sub muted" id="stamp"></p>
+</header>
+
+<div class="card hero">
+  <div>
+    <span class="badge" id="stage-badge"><span class="dot"></span><span id="stage-label"></span></span>
+    <div class="hero-num" id="hero-val"></div>
+    <div class="sub">flu-like illness consultations per 100&#8217;000 people, <span id="hero-week"></span></div>
+    <div class="trend" id="hero-trend"></div>
+  </div>
+  <div>
+    <div class="meter" id="meter"></div>
+    <p class="sub muted" style="margin-top:18px" id="stage-desc"></p>
+  </div>
+</div>
+
+<div class="tiles" id="tiles"></div>
+
+<div class="filters">
+  <label class="f" for="season">Season</label>
+  <select id="season"></select>
+  <span class="sub muted">Seasons run from calendar week 40 to week 39.</span>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>Flu-like illness, consultations per 100&#8217;000</h2>
+      <p class="sub muted">Sentinella GP network &middot; the figure the FOPH uses to declare an epidemic</p>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--series-1)"></i><span id="lg-season"></span></span>
+      <span><i style="background:var(--muted)"></i>10-season median</span>
+      <span><i class="sq" style="background:var(--band)"></i>10-season range</span>
+    </div>
+  </div>
+  <div class="chart" id="c-ili"><div class="tip" id="tip-ili"></div></div>
+  <details>
+    <summary>Show as table</summary>
+    <div class="tbl-wrap scroll"><table id="t-ili"></table></div>
+  </details>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>Laboratory-confirmed influenza cases</h2>
+      <p class="sub muted">Mandatory reporting of positive tests &middot; Switzerland and Liechtenstein</p>
+    </div>
+    <div class="legend">
+      <span><i class="sq" style="background:var(--series-1)"></i>Influenza A</span>
+      <span><i class="sq" style="background:var(--series-2)"></i>Influenza B</span>
+      <span><i class="sq" style="background:var(--muted)"></i>Not typed</span>
+    </div>
+  </div>
+  <div class="chart" id="c-cases"><div class="tip" id="tip-cases"></div></div>
+  <details>
+    <summary>Show as table</summary>
+    <div class="tbl-wrap scroll"><table id="t-cases"></table></div>
+  </details>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-head"><div>
+      <h2>By Sentinella region</h2>
+      <p class="sub muted">Consultations per 100&#8217;000, <span class="wk"></span></p>
+    </div></div>
+    <div class="scroll"><table id="t-regions"></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div>
+      <h2>Confirmed cases by canton</h2>
+      <p class="sub muted">Reported positive tests, <span class="wk"></span></p>
+    </div></div>
+    <div class="scroll"><table id="t-cantons"></table></div>
+  </div>
+</div>
+
+<footer>
+  <h3>How the stages work</h3>
+  <p id="foot-stages"></p>
+  <p>Only the <strong>68 per 100&#8217;000</strong> epidemic threshold is an official FOPH definition &mdash; it is the
+  level at which a seasonal flu epidemic is declared in Switzerland. The bands above and below it are derived
+  from the distribution of weekly national incidence since 2013 (roughly the 90th and 95th percentiles) to give
+  the single threshold some shape. Treat them as a reading aid, not as official policy levels.</p>
+  <h3>Two different numbers</h3>
+  <p>The headline figure counts <em>consultations for flu-like illness</em> extrapolated from the Sentinella
+  network of GPs &mdash; a broad activity signal, not confirmed flu. The case counts are
+  <em>laboratory-confirmed</em> influenza reported under the mandatory reporting system; they are a large
+  undercount of real infections, since most people with flu are never tested.</p>
+  <h3>Source</h3>
+  <p id="foot-src"></p>
+</footer>
+
+</div>
+
+<script>
+const DATA = "__DATA__";
+
+/* ---------- helpers ---------------------------------------------------- */
+const nf = new Intl.NumberFormat('de-CH');
+const fmt  = (v, d = 0) => v === null || v === undefined ? '–'
+  : new Intl.NumberFormat('de-CH', {minimumFractionDigits: d, maximumFractionDigits: d}).format(v);
+const el = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
+const dateLabel = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-CH',
+  {day: '2-digit', month: 'short'});
+const STAGE_COLOR = {
+  baseline: '--st-baseline', low: '--st-good', epidemic: '--st-warning',
+  high: '--st-serious', very_high: '--st-critical', unknown: '--muted',
+};
+const TREND = {rising: '↑ rising', falling: '↓ falling', stagnant: '→ stable'};
+
+/* ---------- header, hero, tiles ---------------------------------------- */
+const cur = DATA.current;
+const stages = DATA.thresholds.stages;            // most severe first
+
+el('strap').textContent =
+  `Influenza activity in Switzerland, season ${cur.season}. Updated weekly by the Federal Office of Public Health.`;
+el('stamp').innerHTML =
+  `Data week <strong>${cur.week}</strong> (from ${dateLabel(cur.week_start)})<br>` +
+  `Page built ${new Date(DATA.generated_at).toLocaleString('de-CH')}`;
+
+const stageKey = cur.stage_key;
+const badge = el('stage-badge');
+badge.style.color = `var(${STAGE_COLOR[stageKey]})`;
+el('stage-label').textContent = cur.epidemic ? `${cur.stage} — above epidemic threshold` : cur.stage;
+el('hero-val').innerHTML = `${fmt(cur.ili_incidence, 1)}<span class="hero-unit">/ 100’000</span>`;
+el('hero-week').textContent = `week ${cur.week}`;
+el('hero-trend').textContent =
+  `${TREND[cur.trend] || 'trend n/a'} · ${fmt(cur.pct_of_epidemic_threshold, 0)}% of the epidemic threshold (68)`;
+el('stage-desc').textContent = cur.stage_description;
+document.querySelectorAll('.wk').forEach(n => n.textContent = 'week ' + cur.week);
+
+// segmented stage meter: five equal bands, boundary values labelled underneath
+(function meter() {
+  const asc = [...stages].reverse();               // baseline -> very_high
+  const idx = asc.findIndex(s => s.key === stageKey);
+  if (idx < 0) {                                   // no incidence reported this week
+    el('meter').innerHTML = '<p class="sub muted">No incidence reported for this week.</p>';
+    return;
+  }
+  const lo = asc[idx].from;
+  const hi = idx + 1 < asc.length ? asc[idx + 1].from : Math.max(lo * 1.6, cur.ili_incidence * 1.1);
+  const within = Math.min(1, Math.max(0, ((cur.ili_incidence ?? 0) - lo) / (hi - lo)));
+  const pos = ((idx + within) / asc.length) * 100;
+  el('meter').innerHTML =
+    `<div class="marker" style="left:${pos.toFixed(2)}%">${fmt(cur.ili_incidence, 0)}</div>` +
+    `<div class="meter-bands">` +
+    asc.map(s => `<div class="meter-band ${s.key === stageKey ? 'on' : ''}" ` +
+                 `style="background:var(${STAGE_COLOR[s.key]})"></div>`).join('') +
+    `</div><div class="meter-labels">` +
+    asc.map(s => `<span><b>${s.label}</b>${s.from > 0 ? '≥ ' + s.from : '< 20'}</span>`).join('') +
+    `</div>`;
+})();
+
+el('tiles').innerHTML = [
+  ['Confirmed cases', fmt(cur.confirmed_cases), `this week · ${TREND[cur.confirmed_cases_trend] || 'trend n/a'}`],
+  ['Season to date', fmt(cur.season_confirmed_cases), `confirmed cases since week 40`],
+  ['Swabs positive for flu', cur.pct_positive === null ? '–' : fmt(cur.pct_positive, 0) + '%',
+   `${fmt(cur.detections)} of ${fmt(cur.samples_tested)} Sentinella samples`],
+  ['Share of GP visits', cur.pct_of_all_consultations === null ? '–'
+   : fmt(cur.pct_of_all_consultations, 2) + '%', 'of all consultations were flu-like illness'],
+].map(([k, v, n]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`)
+ .join('');
+
+el('foot-stages').innerHTML = [...stages].reverse().map(s =>
+  `<strong style="color:var(${STAGE_COLOR[s.key]})">●</strong> <strong>${s.label}</strong> ` +
+  `(${s.from > 0 ? '≥ ' + s.from : 'below 20'} / 100’000) — ${s.description}`).join('<br>');
+el('foot-src').innerHTML =
+  `${DATA.source.name}. <a href="${DATA.source.dashboard}">Official dashboard</a> · ` +
+  `${DATA.source.update_schedule} · ${DATA.source.licence}.`;
+
+/* ---------- season filter ---------------------------------------------- */
+const seasons = [...new Set(DATA.history.map(h => h.season))].sort().reverse();
+el('season').innerHTML = seasons.map(s => `<option value="${s}">${s}</option>`).join('');
+el('season').value = cur.season;
+el('season').addEventListener('change', render);
+
+/* ---------- chart primitives ------------------------------------------- */
+const SVG = 'http://www.w3.org/2000/svg';
+const mk = (tag, attrs = {}) => {
+  const n = document.createElementNS(SVG, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+};
+const niceTicks = (max, count = 5) => {
+  const raw = max / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag;
+  const out = [];
+  for (let v = 0; v <= max + 1e-9; v += step) out.push(v);
+  return out;
+};
+
+function frame(host, height) {
+  host.querySelectorAll('svg').forEach(s => s.remove());
+  const W = Math.max(300, host.clientWidth);
+  const svg = mk('svg', {width: W, height, viewBox: `0 0 ${W} ${height}`, role: 'img'});
+  host.appendChild(svg);
+  return {svg, W, H: height};
+}
+
+function axes(svg, W, H, m, yMax, yTicks, unit) {
+  const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
+  for (const t of yTicks) {
+    svg.appendChild(mk('line', {x1: m.l, x2: W - m.r, y1: y(t), y2: y(t),
+      stroke: t === 0 ? css('--axis') : css('--grid'), 'stroke-width': 1}));
+    const lb = mk('text', {x: m.l - 8, y: y(t) + 4, 'text-anchor': 'end',
+      fill: css('--muted'), 'font-size': 11, 'font-variant-numeric': 'tabular-nums'});
+    lb.textContent = nf.format(t);
+    svg.appendChild(lb);
+  }
+  if (unit) {
+    const u = mk('text', {x: 0, y: 12, 'text-anchor': 'start', fill: css('--muted'), 'font-size': 11});
+    u.textContent = unit;
+    svg.appendChild(u);
+  }
+  return y;
+}
+
+function xLabels(svg, rows, x, H, m) {
+  const months = new Map();
+  rows.forEach((r, i) => {
+    const mo = r.date.slice(0, 7);
+    if (!months.has(mo)) months.set(mo, {date: r.date, idx: []});
+    months.get(mo).idx.push(i);
+  });
+  let lastPx = -Infinity;
+  for (const [, v] of months) {
+    const px = v.idx.reduce((a, i) => a + x(i), 0) / v.idx.length;
+    if (px - lastPx < 34) continue;            // keep month ticks from colliding
+    if (px > W_LIMIT.W - m.r - 12 || px < m.l - 4) continue;
+    lastPx = px;
+    const t = mk('text', {x: px, y: H - m.b + 16, 'text-anchor': 'middle',
+      fill: css('--muted'), 'font-size': 11});
+    t.textContent = new Date(v.date + 'T00:00:00').toLocaleDateString('en-GB', {month: 'short'});
+    svg.appendChild(t);
+  }
+}
+const W_LIMIT = {W: 0};
+
+/* ---------- chart 1: ILI incidence ------------------------------------- */
+function drawIli(rows) {
+  const host = el('c-ili'), tip = el('tip-ili');
+  const H = 300, m = {t: 26, r: 16, b: 28, l: 44};
+  const {svg, W} = frame(host, H);
+  W_LIMIT.W = W;
+  const env = rows.map(r => DATA.envelope[String(r.weeknum)] || null);
+  const vals = rows.map(r => r.ili_incidence).filter(v => v !== null);
+  const yMax = Math.max(80, ...vals, ...env.filter(Boolean).map(e => e.max)) * 1.12;
+  const ticks = niceTicks(yMax);
+  const y = axes(svg, W, H, m, yMax, ticks, 'per 100’000');
+  const x = i => m.l + (W - m.l - m.r) * (rows.length < 2 ? 0.5 : i / (rows.length - 1));
+  xLabels(svg, rows, x, H, m);
+
+  // 10-season min-max envelope + median
+  const top = [], bot = [];
+  env.forEach((e, i) => { if (e) { top.push(`${x(i)},${y(e.max)}`); bot.unshift(`${x(i)},${y(e.min)}`); } });
+  if (top.length) {
+    svg.appendChild(mk('polygon', {points: [...top, ...bot].join(' '), fill: css('--band')}));
+    const med = env.map((e, i) => e ? `${x(i)},${y(e.median)}` : null).filter(Boolean).join(' ');
+    svg.appendChild(mk('polyline', {points: med, fill: 'none', stroke: css('--muted'),
+      'stroke-width': 2, 'stroke-linejoin': 'round'}));
+  }
+
+  // epidemic threshold
+  const th = DATA.thresholds.epidemic;
+  if (th < yMax) {
+    svg.appendChild(mk('line', {x1: m.l, x2: W - m.r, y1: y(th), y2: y(th),
+      stroke: css('--st-critical'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4'}));
+    const lb = mk('text', {x: W - m.r, y: y(th) - 6, 'text-anchor': 'end',
+      fill: css('--st-critical'), 'font-size': 11, 'font-weight': 600});
+    lb.textContent = `Epidemic threshold ${th}`;
+    svg.appendChild(lb);
+  }
+
+  // this season
+  const pts = rows.map((r, i) => r.ili_incidence === null ? null : `${x(i)},${y(r.ili_incidence)}`).filter(Boolean);
+  svg.appendChild(mk('polyline', {points: pts.join(' '), fill: 'none', stroke: css('--series-1'),
+    'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}));
+
+  // endpoint marker + direct label
+  const lastIdx = rows.map(r => r.ili_incidence).reduce((a, v, i) => v === null ? a : i, -1);
+  if (lastIdx >= 0) {
+    const lx = x(lastIdx), ly = y(rows[lastIdx].ili_incidence);
+    svg.appendChild(mk('circle', {cx: lx, cy: ly, r: 5, fill: css('--series-1'),
+      stroke: css('--surface'), 'stroke-width': 2}));
+    const t = mk('text', {x: Math.min(lx + 10, W - m.r), y: ly - 10,
+      'text-anchor': lx > W - 90 ? 'end' : 'start', fill: css('--text-primary'),
+      'font-size': 12, 'font-weight': 650});
+    t.textContent = fmt(rows[lastIdx].ili_incidence, 0);
+    svg.appendChild(t);
+  }
+
+  // crosshair + tooltip
+  const cross = mk('line', {y1: m.t, y2: H - m.b, stroke: css('--axis'), 'stroke-width': 1, opacity: 0});
+  const focus = mk('circle', {r: 4.5, fill: css('--series-1'), stroke: css('--surface'), 'stroke-width': 2, opacity: 0});
+  svg.appendChild(cross); svg.appendChild(focus);
+  const hit = mk('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent'});
+  svg.appendChild(hit);
+  const hide = () => { tip.style.opacity = 0; cross.setAttribute('opacity', 0); focus.setAttribute('opacity', 0); };
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('mousemove', ev => {
+    const bx = svg.getBoundingClientRect();
+    const px = ev.clientX - bx.left;
+    const i = Math.round((px - m.l) / (W - m.l - m.r) * (rows.length - 1));
+    const r = rows[Math.min(rows.length - 1, Math.max(0, i))];
+    if (!r) return;
+    const e = DATA.envelope[String(r.weeknum)];
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
+    if (r.ili_incidence !== null) {
+      focus.setAttribute('cx', x(i)); focus.setAttribute('cy', y(r.ili_incidence)); focus.setAttribute('opacity', 1);
+    } else focus.setAttribute('opacity', 0);
+    tip.innerHTML = `<div class="t">${r.week} · ${dateLabel(r.date)}</div>` +
+      `<div class="r"><span>Consultations</span><span>${fmt(r.ili_incidence, 1)}</span></div>` +
+      (e ? `<div class="r"><span>10-season median</span><span>${fmt(e.median, 1)}</span></div>` : '') +
+      `<div class="r"><span>Confirmed cases</span><span>${fmt(r.cases)}</span></div>` +
+      (r.pct_positive !== null ? `<div class="r"><span>Swabs positive</span><span>${fmt(r.pct_positive, 0)}%</span></div>` : '');
+    tip.style.opacity = 1;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.min(W - tw - 4, Math.max(4, x(i) + 14)) + 'px';
+    tip.style.top = Math.max(4, (r.ili_incidence !== null ? y(r.ili_incidence) : m.t) - 20) + 'px';
+  });
+
+  svg.setAttribute('aria-label',
+    `Flu-like illness consultations per 100000 for season ${rows[0].season}, peak ` +
+    `${fmt(Math.max(...vals), 0)}, epidemic threshold 68.`);
+}
+
+/* ---------- chart 2: confirmed cases ----------------------------------- */
+function drawCases(rows) {
+  const host = el('c-cases'), tip = el('tip-cases');
+  const H = 240, m = {t: 26, r: 16, b: 28, l: 44};
+  const {svg, W} = frame(host, H);
+  W_LIMIT.W = W;
+  const total = r => (r.cases_a || 0) + (r.cases_b || 0) + (r.cases_untyped || 0);
+  const yMax = Math.max(10, ...rows.map(r => Math.max(total(r), r.cases || 0))) * 1.12;
+  const ticks = niceTicks(yMax);
+  const y = axes(svg, W, H, m, yMax, ticks, 'cases / week');
+  const step = (W - m.l - m.r) / rows.length;
+  const bw = Math.max(2, step - 2);
+  const x = i => m.l + step * (i + 0.5);
+  xLabels(svg, rows, x, H, m);
+  const y0 = y(0);
+
+  rows.forEach((r, i) => {
+    const a = r.cases_a || 0, b = r.cases_b || 0;
+    if (!total(r)) return;
+    const bx = m.l + step * i + (step - bw) / 2;
+    let cursor = y0;
+    // A sits on the baseline; B and the untyped remainder stack above it, each
+    // separated by a 2px surface gap rather than a stroke
+    [[a, '--series-1'], [b, '--series-2'], [r.cases_untyped || 0, '--muted']].forEach(([v, tok], si) => {
+      if (!v) return;
+      const h = (y0 - y(v));
+      const top = cursor - h;
+      svg.appendChild(mk('rect', {x: bx, y: top, width: bw, height: Math.max(1, h - (si ? 2 : 0)),
+        fill: css(tok), rx: 2}));
+      cursor = top;
+    });
+  });
+
+  const hit = mk('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent'});
+  svg.appendChild(hit);
+  hit.addEventListener('mouseleave', () => tip.style.opacity = 0);
+  hit.addEventListener('mousemove', ev => {
+    const bx = svg.getBoundingClientRect();
+    const i = Math.floor((ev.clientX - bx.left - m.l) / step);
+    const r = rows[Math.min(rows.length - 1, Math.max(0, i))];
+    if (!r) return;
+    tip.innerHTML = `<div class="t">${r.week} · ${dateLabel(r.date)}</div>` +
+      `<div class="r"><span>Influenza A</span><span>${fmt(r.cases_a)}</span></div>` +
+      `<div class="r"><span>Influenza B</span><span>${fmt(r.cases_b)}</span></div>` +
+      (r.cases_untyped ? `<div class="r"><span>Not typed</span><span>${fmt(r.cases_untyped)}</span></div>` : '') +
+      `<div class="r"><span>All confirmed</span><span>${fmt(r.cases)}</span></div>`;
+    tip.style.opacity = 1;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.min(W - tw - 4, Math.max(4, x(i) + 12)) + 'px';
+    tip.style.top = m.t + 'px';
+  });
+
+  svg.setAttribute('aria-label',
+    `Weekly laboratory-confirmed influenza cases, season ${rows[0].season}, ` +
+    `peak ${fmt(Math.max(...rows.map(total)))} in a week, split by influenza type.`);
+}
+
+/* ---------- tables ------------------------------------------------------ */
+function tbl(node, head, body) {
+  node.innerHTML = `<thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead>` +
+    `<tbody>${body.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+const maxRegion = Math.max(...DATA.regions.map(r => r.incidence || 0), 1);
+tbl(el('t-regions'), ['Region', 'Cantons', 'Per 100’000', 'Stage'],
+  DATA.regions.map(r => [
+    r.name, `<span class="muted">${r.cantons}</span>`,
+    `${fmt(r.incidence, 1)} <span class="bar" style="width:${(r.incidence || 0) / maxRegion * 40}px"></span>`,
+    `<span style="color:var(${STAGE_COLOR[r.stage.key]});font-weight:600">● ${r.stage.label}</span>`,
+  ]));
+
+const maxCanton = Math.max(...DATA.cantons.map(c => c.cases || 0), 1);
+tbl(el('t-cantons'), ['Canton', 'Cases', 'Per 100’000'],
+  DATA.cantons.map(c => [
+    c.name,
+    `${fmt(c.cases)} <span class="bar" style="width:${(c.cases || 0) / maxCanton * 40}px"></span>`,
+    fmt(c.incidence, 2),
+  ]));
+
+/* ---------- render ------------------------------------------------------ */
+function render() {
+  const season = el('season').value;
+  const rows = DATA.history.filter(h => h.season === season);
+  el('lg-season').textContent = `Season ${season}`;
+  drawIli(rows);
+  drawCases(rows);
+  tbl(el('t-ili'), ['Week', 'Per 100’000', '10-season median', 'Confirmed cases', 'Swabs positive'],
+    [...rows].reverse().map(r => {
+      const e = DATA.envelope[String(r.weeknum)];
+      return [r.week, fmt(r.ili_incidence, 1), e ? fmt(e.median, 1) : '–', fmt(r.cases),
+              r.pct_positive === null ? '–' : fmt(r.pct_positive, 0) + '%'];
+    }));
+  tbl(el('t-cases'), ['Week', 'Influenza A', 'Influenza B', 'Not typed', 'Total'],
+    [...rows].reverse().map(r =>
+      [r.week, fmt(r.cases_a), fmt(r.cases_b), fmt(r.cases_untyped), fmt(r.cases)]));
+}
+
+render();
+let rt;
+addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+</script>
+</body>
+</html>
