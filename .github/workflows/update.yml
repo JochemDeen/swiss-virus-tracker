@@ -1,4 +1,4 @@
-name: Update flu data
+name: Update virus data
 
 on:
   schedule:

@@ -12,7 +12,7 @@ GitHub turns off scheduled workflows after **60 days of repository inactivity**.
 Building and deploying does not count as activity — only pushes do — so a repo that
 just sits there rebuilding itself will be switched off roughly every two months.
 
-**Fix now:** Actions tab → *Update flu data* → **Enable workflow**, then *Run workflow*
+**Fix now:** Actions tab → *Update virus data* → **Enable workflow**, then *Run workflow*
 to catch up.
 
 **Fix for good:** make the Wednesday run push a commit, which resets the 60-day clock
