@@ -17,6 +17,7 @@
   --border:         rgba(11,11,11,0.10);
   --series-1:       #2a78d6;
   --series-2:       #eb6834;
+  --series-3:       #b5417f;
   --band:           rgba(137,135,129,0.14);
   --st-baseline:    #898781;
   --st-good:        #0ca30c;
@@ -37,6 +38,7 @@
     --border:         rgba(255,255,255,0.10);
     --series-1:       #3987e5;
     --series-2:       #d95926;
+    --series-3:       #c9569a;
     --band:           rgba(137,135,129,0.18);
     --up:             #0ca30c;
   }
@@ -44,7 +46,8 @@
 :root[data-theme="dark"] {
   --plane:#0d0d0d; --surface:#1a1a19; --text-primary:#fff; --text-secondary:#c3c2b7;
   --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-  --series-1:#3987e5; --series-2:#d95926; --band:rgba(137,135,129,0.18); --up:#0ca30c;
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#c9569a;
+  --band:rgba(137,135,129,0.18); --up:#0ca30c;
 }
 * { box-sizing: border-box; }
 body {
@@ -206,6 +209,7 @@ footer h3 { font-size: 12.5px; color: var(--text-secondary); margin: 16px 0 4px;
       <span><i class="sq" style="background:var(--series-1)"></i>Influenza A</span>
       <span><i class="sq" style="background:var(--series-2)"></i>Influenza B</span>
       <span><i class="sq" style="background:var(--muted)"></i>Not typed</span>
+      <span><i style="background:var(--muted)"></i>10-year median</span>
     </div>
   </div>
   <div class="chart" id="c-cases"><div class="tip" id="tip-cases"></div></div>
@@ -213,6 +217,56 @@ footer h3 { font-size: 12.5px; color: var(--text-secondary); margin: 16px 0 4px;
     <summary>Show as table</summary>
     <div class="tbl-wrap scroll"><table id="t-cases"></table></div>
   </details>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>Respiratory viruses in Sentinella swabs</h2>
+      <p class="sub muted">Share of swabs testing positive by PCR &middot; one swab is tested for all
+      three, so the lines can sum above 100%</p>
+    </div>
+    <div class="legend" id="lg-panel"></div>
+  </div>
+  <div class="chart" id="c-panel"><div class="tip" id="tip-panel"></div></div>
+  <p class="sub muted" id="panel-note"></p>
+  <details>
+    <summary>Show as table</summary>
+    <div class="tbl-wrap scroll"><table id="t-panel"></table></div>
+  </details>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2>The same three viruses in wastewater</h2>
+      <p class="sub muted" id="ww-sub"></p>
+    </div>
+    <div class="legend" id="lg-ww"></div>
+  </div>
+  <div class="chart" id="c-ww"><div class="tip" id="tip-ww"></div></div>
+  <p class="sub muted" id="ww-note"></p>
+  <details>
+    <summary>Show the treatment plants</summary>
+    <div class="scroll"><table id="t-ww-sites"></table></div>
+  </details>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-head"><div>
+      <h2>By age group</h2>
+      <p class="sub muted">Flu-like illness per 100&#8217;000 and confirmed cases, <span class="wk"></span></p>
+    </div></div>
+    <div class="scroll"><table id="t-ages"></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div>
+      <h2>Influenza subtypes</h2>
+      <p class="sub muted">Sentinella detections this season, share of all influenza</p>
+    </div></div>
+    <div class="scroll"><table id="t-subtypes"></table></div>
+  </div>
 </div>
 
 <div class="grid2">
@@ -239,11 +293,29 @@ footer h3 { font-size: 12.5px; color: var(--text-secondary); margin: 16px 0 4px;
   level at which a seasonal flu epidemic is declared in Switzerland. The bands above and below it are derived
   from the distribution of weekly national incidence since 2013 (roughly the 90th and 95th percentiles) to give
   the single threshold some shape. Treat them as a reading aid, not as official policy levels.</p>
-  <h3>Two different numbers</h3>
+  <h3>Consultations vs confirmed cases</h3>
   <p>The headline figure counts <em>consultations for flu-like illness</em> extrapolated from the Sentinella
   network of GPs &mdash; a broad activity signal, not confirmed flu. The case counts are
   <em>laboratory-confirmed</em> influenza reported under the mandatory reporting system; they are a large
   undercount of real infections, since most people with flu are never tested.</p>
+  <h3>Reading the swab panel</h3>
+  <p>Sentinella GPs send a subset of their flu-like-illness patients&#8217; swabs for PCR, and each swab is
+  tested for influenza, RSV and SARS-CoV-2 together. The three rates therefore share one denominator and
+  can sum above 100%, because a swab can be positive for more than one virus. They say what is circulating
+  <em>among people who saw a doctor and were swabbed</em> &mdash; not how common each virus is in the
+  population. The denominator collapses outside flu season, sometimes to fewer than ten swabs a week, and
+  at that point a single detection swings the rate by tens of percentage points; the note under the chart
+  gives the week&#8217;s swab count so the thin weeks are visible rather than implied.</p>
+  <h3>Reading the wastewater panel</h3>
+  <p>Everything else here counts people who saw a doctor. Wastewater does not: it measures virus shed
+  into the sewers of eleven treatment plants, so it is unaffected by who feels ill enough to seek care,
+  by testing rates, or by the holidays. It is also <em>daily</em>, and usually a little ahead of the
+  weekly reporting above. The trade-off is coverage &mdash; those eleven plants serve about 2 million
+  of Switzerland&#8217;s 9 million people, so this is a sample of the country, not the country.</p>
+  <p>The three panels each carry <strong>their own vertical scale</strong>, and that is deliberate.
+  How much virus an infected person sheds differs enormously between these viruses, so SARS-CoV-2 load
+  running an order of magnitude above influenza says nothing about how many people have either one.
+  Compare each virus against its own past, never one against another.</p>
   <h3>Source</h3>
   <p id="foot-src"></p>
 </footer>
@@ -272,7 +344,8 @@ const cur = DATA.current;
 const stages = DATA.thresholds.stages;            // most severe first
 
 el('strap').textContent =
-  `Influenza activity in Switzerland, season ${cur.season}. Updated weekly by the Federal Office of Public Health.`;
+  `Influenza activity in Switzerland, season ${cur.season}, with RSV and SARS-CoV-2 from the same ` +
+  `swabs. Updated weekly by the Federal Office of Public Health.`;
 el('stamp').innerHTML =
   `Data week <strong>${cur.week}</strong> (from ${dateLabel(cur.week_start)})<br>` +
   `Page built ${new Date(DATA.generated_at).toLocaleString('de-CH')}`;
@@ -310,11 +383,15 @@ document.querySelectorAll('.wk').forEach(n => n.textContent = 'week ' + cur.week
     `</div>`;
 })();
 
+const pct = (v) => v === null || v === undefined ? '–' : fmt(v, 0) + '%';
+const swabs = `of ${fmt(cur.samples_tested)} swab${cur.samples_tested === 1 ? '' : 's'} tested`;
 el('tiles').innerHTML = [
-  ['Confirmed cases', fmt(cur.confirmed_cases), `this week · ${TREND[cur.confirmed_cases_trend] || 'trend n/a'}`],
-  ['Season to date', fmt(cur.season_confirmed_cases), `confirmed cases since week 40`],
-  ['Swabs positive for flu', cur.pct_positive === null ? '–' : fmt(cur.pct_positive, 0) + '%',
-   `${fmt(cur.detections)} of ${fmt(cur.samples_tested)} Sentinella samples`],
+  ['Confirmed influenza', fmt(cur.confirmed_cases), `this week · ${TREND[cur.confirmed_cases_trend] || 'trend n/a'}`],
+  ['Season to date', fmt(cur.season_confirmed_cases),
+   `confirmed cases since week 40` + (cur.dominant_subtype ? ` · ${cur.dominant_subtype} leading` : '')],
+  ['Flu in swabs', pct(cur.pct_positive), `${fmt(cur.detections)} ${swabs}`],
+  ['RSV in swabs', pct(cur.rsv_pct_positive), `${fmt(cur.rsv_detections)} ${swabs}`],
+  ['COVID in swabs', pct(cur.covid_pct_positive), `${fmt(cur.covid_detections)} ${swabs}`],
   ['Share of GP visits', cur.pct_of_all_consultations === null ? '–'
    : fmt(cur.pct_of_all_consultations, 2) + '%', 'of all consultations were flu-like illness'],
 ].map(([k, v, n]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`)
@@ -339,6 +416,14 @@ const mk = (tag, attrs = {}) => {
   const n = document.createElementNS(SVG, tag);
   for (const k in attrs) n.setAttribute(k, attrs[k]);
   return n;
+};
+// Smallest "round" number at or above max. niceTicks stops at the last tick that
+// fits *below* its argument, which is right for gridlines and wrong for a ceiling
+// — using it as one silently clips the curve.
+const niceCeil = (max) => {
+  if (!(max > 0)) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(max)));
+  return ([1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10].find(m => m * mag >= max) || 10) * mag;
 };
 const niceTicks = (max, count = 5) => {
   const raw = max / count;
@@ -491,7 +576,11 @@ function drawCases(rows) {
   const {svg, W} = frame(host, H);
   W_LIMIT.W = W;
   const total = r => (r.cases_a || 0) + (r.cases_b || 0) + (r.cases_untyped || 0);
-  const yMax = Math.max(10, ...rows.map(r => Math.max(total(r), r.cases || 0))) * 1.12;
+  // The FOPH publishes its own 10-year median for the same calendar week. It is a
+  // rolling window, so it is absent for older seasons — hence the nulls.
+  const band = rows.map(r => DATA.cases_band[r.week] || null);
+  const yMax = Math.max(10, ...rows.map(r => Math.max(total(r), r.cases || 0)),
+    ...band.filter(Boolean).map(b => b.median)) * 1.12;
   const ticks = niceTicks(yMax);
   const y = axes(svg, W, H, m, yMax, ticks, 'cases / week');
   const step = (W - m.l - m.r) / rows.length;
@@ -517,19 +606,25 @@ function drawCases(rows) {
     });
   });
 
+  const med = band.map((b, i) => b ? `${x(i)},${y(b.median)}` : null).filter(Boolean);
+  if (med.length > 1) svg.appendChild(mk('polyline', {points: med.join(' '), fill: 'none',
+    stroke: css('--muted'), 'stroke-width': 2, 'stroke-linejoin': 'round'}));
+
   const hit = mk('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent'});
   svg.appendChild(hit);
   hit.addEventListener('mouseleave', () => tip.style.opacity = 0);
   hit.addEventListener('mousemove', ev => {
     const bx = svg.getBoundingClientRect();
     const i = Math.floor((ev.clientX - bx.left - m.l) / step);
-    const r = rows[Math.min(rows.length - 1, Math.max(0, i))];
+    const j = Math.min(rows.length - 1, Math.max(0, i));
+    const r = rows[j];
     if (!r) return;
     tip.innerHTML = `<div class="t">${r.week} · ${dateLabel(r.date)}</div>` +
       `<div class="r"><span>Influenza A</span><span>${fmt(r.cases_a)}</span></div>` +
       `<div class="r"><span>Influenza B</span><span>${fmt(r.cases_b)}</span></div>` +
       (r.cases_untyped ? `<div class="r"><span>Not typed</span><span>${fmt(r.cases_untyped)}</span></div>` : '') +
-      `<div class="r"><span>All confirmed</span><span>${fmt(r.cases)}</span></div>`;
+      `<div class="r"><span>All confirmed</span><span>${fmt(r.cases)}</span></div>` +
+      (band[j] ? `<div class="r"><span>10-year median</span><span>${fmt(band[j].median)}</span></div>` : '');
     tip.style.opacity = 1;
     const tw = tip.offsetWidth;
     tip.style.left = Math.min(W - tw - 4, Math.max(4, x(i) + 12)) + 'px';
@@ -539,6 +634,300 @@ function drawCases(rows) {
   svg.setAttribute('aria-label',
     `Weekly laboratory-confirmed influenza cases, season ${rows[0].season}, ` +
     `peak ${fmt(Math.max(...rows.map(total)))} in a week, split by influenza type.`);
+}
+
+/* ---------- shared multi-series line chart ------------------------------ */
+// Both the swab panel and the wastewater series show the same three pathogens on
+// the same three hues, so the two charts can be read against one another. Only
+// the y value, the unit and the tooltip body differ.
+const PATHOGEN_COLOR = {flu: '--series-1', rsv: '--series-2', covid: '--series-3'};
+const SERIES = DATA.pathogens.map(p => ({...p, tok: PATHOGEN_COLOR[p.key]}));
+const LEGEND = SERIES.map(s =>
+  `<span><i style="background:var(${s.tok})"></i>${s.label}</span>`).join('');
+el('lg-panel').innerHTML = LEGEND;
+el('lg-ww').innerHTML = LEGEND;
+
+function multiLine({host, tip, rows, value, unit, title, tipRows, aria, empty, height = 260}) {
+  const node = el(host), tipEl = el(tip);
+  node.querySelectorAll('svg, .empty').forEach(n => n.remove());
+  tipEl.style.opacity = 0;
+  if (!rows.length) {
+    const p = document.createElement('p');
+    p.className = 'empty sub muted';
+    p.textContent = empty;
+    node.appendChild(p);
+    return;
+  }
+  const m = {t: 26, r: 84, b: 28, l: 52};
+  const {svg, W} = frame(node, height);
+  W_LIMIT.W = W;
+  const all = SERIES.flatMap(s => rows.map(r => value(r, s)))
+    .filter(v => v !== null && v !== undefined);
+  const yMax = (Math.max(0, ...all) * 1.15) || 1;
+  const y = axes(svg, W, height, m, yMax, niceTicks(yMax), unit);
+  const x = i => m.l + (W - m.l - m.r) * (rows.length < 2 ? 0.5 : i / (rows.length - 1));
+  xLabels(svg, rows, x, height, m);
+
+  // One polyline per pathogen, broken wherever that day or week has no reading.
+  const ends = [];
+  SERIES.forEach(s => {
+    let run = [];
+    const flush = () => {
+      if (run.length > 1) svg.appendChild(mk('polyline', {points: run.join(' '), fill: 'none',
+        stroke: css(s.tok), 'stroke-width': 2, 'stroke-linejoin': 'round',
+        'stroke-linecap': 'round'}));
+      else if (run.length === 1) svg.appendChild(mk('circle', {cx: +run[0].split(',')[0],
+        cy: +run[0].split(',')[1], r: 2.5, fill: css(s.tok)}));
+      run = [];
+    };
+    rows.forEach((r, i) => {
+      const v = value(r, s);
+      if (v === null || v === undefined) flush(); else run.push(`${x(i)},${y(v)}`);
+    });
+    flush();
+    const last = rows.reduce((a, r, i) => {
+      const v = value(r, s);
+      return v === null || v === undefined ? a : i;
+    }, -1);
+    if (last >= 0) ends.push({s, i: last, y: y(value(rows[last], s))});
+  });
+
+  // Direct labels at the right edge — identity never rests on colour alone.
+  // Nudge apart, then slide the group back inside if the stack ran past the axis
+  // (off-season all three sit on zero and would print over the month labels).
+  ends.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++)
+    if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+  const spill = ends.length ? ends[ends.length - 1].y - (height - m.b - 4) : 0;
+  if (spill > 0) ends.forEach(e => e.y -= spill);
+  ends.forEach(e => e.y = Math.max(m.t + 8, e.y));
+  ends.forEach(({s, i, y: ly}) => {
+    svg.appendChild(mk('circle', {cx: x(i), cy: y(value(rows[i], s)), r: 4.5,
+      fill: css(s.tok), stroke: css('--surface'), 'stroke-width': 2}));
+    const t = mk('text', {x: Math.min(x(i) + 9, W - m.r + 6), y: ly + 4, fill: css(s.tok),
+      'font-size': 11, 'font-weight': 600});
+    t.textContent = s.label;
+    svg.appendChild(t);
+  });
+
+  const cross = mk('line', {y1: m.t, y2: height - m.b, stroke: css('--axis'),
+    'stroke-width': 1, opacity: 0});
+  svg.appendChild(cross);
+  const hit = mk('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: height - m.t - m.b,
+    fill: 'transparent'});
+  svg.appendChild(hit);
+  hit.addEventListener('mouseleave', () => {
+    tipEl.style.opacity = 0; cross.setAttribute('opacity', 0);
+  });
+  hit.addEventListener('mousemove', ev => {
+    const px = ev.clientX - svg.getBoundingClientRect().left;
+    const i = Math.min(rows.length - 1, Math.max(0,
+      Math.round((px - m.l) / (W - m.l - m.r) * (rows.length - 1))));
+    const r = rows[i];
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
+    tipEl.innerHTML = `<div class="t">${title(r)}</div>` + tipRows(r);
+    tipEl.style.opacity = 1;
+    tipEl.style.left = Math.min(W - tipEl.offsetWidth - 4, Math.max(4, x(i) + 14)) + 'px';
+    tipEl.style.top = m.t + 'px';
+  });
+  svg.setAttribute('aria-label', aria(rows, all));
+}
+
+/* ---------- chart 3: the PCR panel -------------------------------------- */
+// `respiratory` arrives columnar (one array per field) to keep the page small;
+// inflate it back into rows once, here.
+const PANEL = DATA.respiratory.weeks.map((week, i) => {
+  const c = DATA.respiratory;
+  const row = {week, date: c.dates[i], season: c.seasons[i], weeknum: c.weeknums[i]};
+  for (const k in c) if (!['weeks', 'dates', 'seasons', 'weeknums'].includes(k)) row[k] = c[k][i];
+  return row;
+});
+
+function drawPanel(rows) {
+  multiLine({
+    host: 'c-panel', tip: 'tip-panel', rows,
+    value: (r, s) => r[s.key + '_pct'],
+    unit: '% of swabs positive',
+    title: r => `${r.week} · ${dateLabel(r.date)}`,
+    tipRows: r => SERIES.map(s =>
+      `<div class="r"><span style="color:var(${s.tok})">●</span>&nbsp;<span>${s.label}</span>` +
+      `<span>${r[s.key + '_pct'] === null ? '–' : fmt(r[s.key + '_pct'], 1) + '%'}</span></div>`).join('') +
+      `<div class="r"><span>Swabs tested</span><span>${fmt(r.samples)}</span></div>`,
+    aria: (rs, all) => `Weekly share of Sentinella swabs positive for influenza, RSV and ` +
+      `SARS-CoV-2, season ${rs[0].season}. Peak positivity ${fmt(Math.max(...all), 0)} percent.`,
+    empty: 'The Sentinella PCR panel only reports from season 2020/21 onwards — ' +
+      'nothing to show for this season.',
+  });
+  if (!rows.length) { el('panel-note').textContent = ''; return; }
+
+  // Positivity off a handful of swabs is nearly meaningless; say the swab count
+  // out loud rather than letting a 25% off eight samples read as a real signal.
+  const counted = rows.map(r => r.samples).filter(v => v !== null && v !== undefined);
+  const total = counted.reduce((a, v) => a + v, 0);
+  const lean = counted.filter(v => v < 20).length;
+  el('panel-note').textContent =
+    `${nf.format(total)} swabs tested this season, ${nf.format(Math.round(total / (counted.length || 1)))} ` +
+    `a week on average` + (lean ? ` — but ${lean} week${lean > 1 ? 's' : ''} saw fewer than 20, ` +
+    `where a single detection moves the rate by several points.` : '.');
+}
+
+/* ---------- chart 4: wastewater ----------------------------------------- */
+// Daily, and the only signal here that does not require anyone to see a doctor.
+// Stored in thousands of gene copies per person per day; shown in millions.
+//
+// Small multiples rather than three lines on one axis: SARS-CoV-2 load runs an
+// order of magnitude above influenza, so a shared scale flattens flu and RSV to
+// nothing. It would also invite a comparison that does not hold — how much virus
+// a person sheds differs by virus, so only each virus against its own history
+// means anything.
+const WW = DATA.wastewater.dates.map((date, i) => {
+  const c = DATA.wastewater;
+  const row = {date, season: c.seasons[i], plants: c.plants[i], coverage: c.coverage[i]};
+  for (const k of ['flu', 'flu_a', 'flu_b', 'rsv', 'covid']) row[k] = c[k][i];
+  return row;
+});
+const wwValue = (r, s) => r[s.key] === null || r[s.key] === undefined ? null : r[s.key] / 1000;
+
+el('ww-sub').textContent =
+  `Gene copies per person per day at ${DATA.wastewater_sites.length} treatment plants, ` +
+  `covering ${nf.format(DATA.wastewater_population)} people · each virus on its own scale`;
+
+tbl(el('t-ww-sites'), ['Plant', 'Canton', 'People served'],
+  DATA.wastewater_sites.map(s => [
+    s.plant.charAt(0).toUpperCase() + s.plant.slice(1), s.canton, nf.format(s.population)]));
+
+function drawWastewater(rows) {
+  const host = el('c-ww'), tip = el('tip-ww');
+  host.querySelectorAll('svg, .empty').forEach(n => n.remove());
+  tip.style.opacity = 0;
+  if (!rows.length) {
+    const p = document.createElement('p');
+    p.className = 'empty sub muted';
+    p.textContent = 'Wastewater monitoring only reaches back to February 2022 — ' +
+      'nothing for this season.';
+    host.appendChild(p);
+    el('ww-note').textContent = '';
+    return;
+  }
+
+  // Each band is a title strip then a plot, so the virus name never sits on top
+  // of its own curve.
+  const BAND = 88, TITLE = 18, PLOT = 60, m = {t: 8, r: 16, b: 28, l: 52};
+  const H = m.t + BAND * SERIES.length + m.b;
+  const {svg, W} = frame(host, H);
+  W_LIMIT.W = W;
+  const x = i => m.l + (W - m.l - m.r) * (rows.length < 2 ? 0.5 : i / (rows.length - 1));
+
+  const scales = SERIES.map((s, band) => {
+    const vals = rows.map(r => wwValue(r, s)).filter(v => v !== null);
+    const top = m.t + band * BAND, plotTop = top + TITLE;
+    const name = mk('text', {x: m.l, y: top + 11, fill: css(s.tok),
+      'font-size': 11, 'font-weight': 600});
+    name.textContent = s.label;
+    svg.appendChild(name);
+
+    // SARS-CoV-2 was measured from February 2022, influenza and RSV only from
+    // the following season. Say so rather than drawing an empty pair of axes.
+    if (!vals.length) {
+      const none = mk('text', {x: m.l, y: plotTop + PLOT / 2, fill: css('--muted'),
+        'font-size': 11});
+      none.textContent = 'not measured this season';
+      svg.appendChild(none);
+      return {s, peak: null};
+    }
+
+    const peak = Math.max(...vals);
+    const tick = niceCeil(peak * 1.08);
+    const y = v => plotTop + PLOT * (1 - v / tick);
+
+    // Baseline and one labelled gridline at the top of each band, so every band
+    // states its own ceiling — that is what makes the differing scales readable.
+    [[0, '--axis'], [tick, '--grid']].forEach(([v, tok]) => {
+      svg.appendChild(mk('line', {x1: m.l, x2: W - m.r, y1: y(v), y2: y(v),
+        stroke: css(tok), 'stroke-width': 1}));
+      const lb = mk('text', {x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end', fill: css('--muted'),
+        'font-size': 11, 'font-variant-numeric': 'tabular-nums'});
+      lb.textContent = v ? fmt(v, v < 10 ? 1 : 0) + 'M' : '0';
+      svg.appendChild(lb);
+    });
+    let run = [];
+    const flush = () => {
+      if (run.length > 1) svg.appendChild(mk('polyline', {points: run.join(' '), fill: 'none',
+        stroke: css(s.tok), 'stroke-width': 2, 'stroke-linejoin': 'round',
+        'stroke-linecap': 'round'}));
+      run = [];
+    };
+    rows.forEach((r, i) => {
+      const v = wwValue(r, s);
+      if (v === null) flush(); else run.push(`${x(i)},${y(v)}`);
+    });
+    flush();
+    const last = rows.reduce((a, r, i) => wwValue(r, s) === null ? a : i, -1);
+    if (last >= 0) svg.appendChild(mk('circle', {cx: x(last), cy: y(wwValue(rows[last], s)),
+      r: 4, fill: css(s.tok), stroke: css('--surface'), 'stroke-width': 2}));
+    return {s, y, peak};
+  });
+
+  xLabels(svg, rows, x, H, m);
+
+  const cross = mk('line', {y1: m.t, y2: H - m.b, stroke: css('--axis'),
+    'stroke-width': 1, opacity: 0});
+  svg.appendChild(cross);
+  const hit = mk('rect', {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b,
+    fill: 'transparent'});
+  svg.appendChild(hit);
+  hit.addEventListener('mouseleave', () => {
+    tip.style.opacity = 0; cross.setAttribute('opacity', 0);
+  });
+  hit.addEventListener('mousemove', ev => {
+    const px = ev.clientX - svg.getBoundingClientRect().left;
+    const i = Math.min(rows.length - 1, Math.max(0,
+      Math.round((px - m.l) / (W - m.l - m.r) * (rows.length - 1))));
+    const r = rows[i];
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
+    tip.innerHTML = `<div class="t">${new Date(r.date + 'T00:00:00').toLocaleDateString('de-CH',
+        {weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'})}</div>` +
+      SERIES.map(s => {
+        const v = wwValue(r, s);
+        return `<div class="r"><span style="color:var(${s.tok})">●</span>&nbsp;<span>${s.label}</span>` +
+          `<span>${v === null ? '–' : fmt(v, 2) + 'M'}</span></div>`;
+      }).join('') +
+      `<div class="r"><span>Plants reporting</span><span>${fmt(r.plants)} of ` +
+      `${DATA.wastewater_sites.length}</span></div>`;
+    tip.style.opacity = 1;
+    tip.style.left = Math.min(W - tip.offsetWidth - 4, Math.max(4, x(i) + 14)) + 'px';
+    tip.style.top = m.t + 'px';
+  });
+
+  svg.setAttribute('aria-label', 'Daily viral load in Swiss wastewater, season ' +
+    `${rows[0].season}, one panel per virus, each on its own scale. ` +
+    scales.map(s => s.peak === null ? `${s.s.label} not measured this season`
+      : `${s.s.label} peaks at ${fmt(s.peak, 2)} million copies per person per day`)
+      .join('; ') + '.');
+
+  const thin = rows.filter(r => r.coverage < 80).length;
+  // The live readout belongs to the current season only — printing today's
+  // numbers under a chart of 2021/22 would read as that season's values.
+  let head;
+  if (rows[0].season === cur.season) {
+    // Wastewater is the one daily series here and usually runs ahead of the
+    // reporting week; worth saying, as everything else on the page is weekly.
+    const lead = Math.round((new Date(cur.wastewater_date) - new Date(cur.week_start)) / 864e5);
+    const latest = SERIES.map(s => `${s.label} ${fmt(cur['wastewater_' + s.key] / 1000, 2)}M ` +
+      `(${TREND[cur['wastewater_' + s.key + '_trend']] || 'trend n/a'})`).join(' · ');
+    head = `<strong>${new Date(cur.wastewater_date + 'T00:00:00').toLocaleDateString('de-CH',
+        {day: '2-digit', month: 'long', year: 'numeric'})}</strong> — ${latest}. ` +
+      `Trend compares against seven days earlier. ` +
+      (lead > 0 ? `That is ${lead} day${lead > 1 ? 's' : ''} ahead of the reporting week above. ` : '');
+  } else {
+    const peaks = scales.filter(s => s.peak !== null)
+      .map(s => `${s.s.label} ${fmt(s.peak, 2)}M`).join(' · ');
+    head = `Season peaks — ${peaks}. `;
+  }
+  el('ww-note').innerHTML = head +
+    `<br>Each point is a 7-day mean across the plants reporting that day, divided by the population ` +
+    `they serve. Days where the reporting plants covered under half the monitored population are ` +
+    `dropped` + (thin ? `; ${thin} of these ${rows.length} days ran on partial coverage.` : '.');
 }
 
 /* ---------- tables ------------------------------------------------------ */
@@ -555,6 +944,15 @@ tbl(el('t-regions'), ['Region', 'Cantons', 'Per 100’000', 'Stage'],
     `<span style="color:var(${STAGE_COLOR[r.stage.key]});font-weight:600">● ${r.stage.label}</span>`,
   ]));
 
+const maxAge = Math.max(...DATA.age_groups.map(a => a.ili_incidence || 0), 1);
+tbl(el('t-ages'), ['Age', 'Per 100’000', 'Share', 'Confirmed cases'],
+  DATA.age_groups.map(a => [
+    a.group,
+    `${fmt(a.ili_incidence, 1)} <span class="bar" style="width:${(a.ili_incidence || 0) / maxAge * 40}px"></span>`,
+    a.ili_share === null ? '–' : fmt(a.ili_share, 0) + '%',
+    fmt(a.cases),
+  ]));
+
 const maxCanton = Math.max(...DATA.cantons.map(c => c.cases || 0), 1);
 tbl(el('t-cantons'), ['Canton', 'Cases', 'Per 100’000'],
   DATA.cantons.map(c => [
@@ -567,9 +965,31 @@ tbl(el('t-cantons'), ['Canton', 'Cases', 'Per 100’000'],
 function render() {
   const season = el('season').value;
   const rows = DATA.history.filter(h => h.season === season);
+  const panel = PANEL.filter(r => r.season === season);
   el('lg-season').textContent = `Season ${season}`;
   drawIli(rows);
   drawCases(rows);
+  drawPanel(panel);
+  drawWastewater(WW.filter(r => r.season === season));
+
+  tbl(el('t-panel'),
+    ['Week', 'Swabs', ...SERIES.map(s => s.label), 'Any pathogen'],
+    [...panel].reverse().map(r => [r.week, fmt(r.samples),
+      ...SERIES.map(s => r[s.key + '_pct'] === null ? '–' : fmt(r[s.key + '_pct'], 1) + '%'),
+      r.pct_positive_any === null ? '–' : fmt(r.pct_positive_any, 1) + '%']));
+
+  // Season totals per subtype, with each one's share of that season's influenza
+  // detections. The A and B rows are the sums of the subtype rows beneath them.
+  const sum = (key) => panel.reduce((a, r) => a + (r[key] || 0), 0);
+  const fluTotal = sum('flu_a') + sum('flu_b');
+  tbl(el('t-subtypes'), ['Subtype', 'Detections', 'Share of influenza'],
+    DATA.flu_subtypes.map(t => {
+      const n = sum(t.key), lead = t.key === 'flu_a' || t.key === 'flu_b';
+      const cell = (v) => lead ? `<strong>${v}</strong>` : v;
+      return [cell(lead ? t.label : `<span class="muted">└</span> ${t.label}`), cell(fmt(n)),
+              cell(fluTotal ? fmt(n / fluTotal * 100, 1) + '%' : '–')];
+    }));
+
   tbl(el('t-ili'), ['Week', 'Per 100’000', '10-season median', 'Confirmed cases', 'Swabs positive'],
     [...rows].reverse().map(r => {
       const e = DATA.envelope[String(r.weeknum)];

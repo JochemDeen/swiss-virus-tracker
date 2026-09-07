@@ -1,0 +1,155 @@
+# /packages/flu_tracker.yaml included in configuration
+rest:
+  - resource: https://JochemDeen.github.io/swiss-virus-tracker/current.json
+    scan_interval: 10800
+    sensor:
+      - name: "Flu Switzerland activity"
+        unique_id: flu_ch_ili_incidence
+        value_template: "{{ value_json.ili_incidence }}"
+        unit_of_measurement: "per 100k"
+        state_class: measurement
+        icon: mdi:virus
+        json_attributes_path: "$"
+        json_attributes:
+          - week
+          - week_start
+          - season
+          - stage
+          - stage_key
+          - stage_level
+          - stage_description
+          - trend
+          - epidemic
+          - pct_of_epidemic_threshold
+          - confirmed_cases
+          - confirmed_cases_trend
+          - pct_positive
+          - season_confirmed_cases
+          - dominant_subtype
+          - samples_tested
+          - rsv_pct_positive
+          - covid_pct_positive
+          - pct_positive_any
+
+      - name: "Flu Switzerland stage"
+        unique_id: flu_ch_stage
+        value_template: "{{ value_json.stage }}"
+        icon: >-
+          {% set k = value_json.stage_key %}
+          {% if k in ['high', 'very_high'] %} mdi:alert-octagon
+          {% elif k == 'epidemic' %} mdi:alert
+          {% else %} mdi:check-circle-outline {% endif %}
+
+      - name: "Flu Switzerland confirmed cases"
+        unique_id: flu_ch_confirmed_cases
+        value_template: "{{ value_json.confirmed_cases | int(0) }}"
+        unit_of_measurement: "cases/week"
+        state_class: measurement
+        icon: mdi:test-tube
+
+      - name: "Flu Switzerland positivity"
+        unique_id: flu_ch_positivity
+        value_template: "{{ value_json.pct_positive }}"
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:percent-outline
+
+      # Same swabs, other two pathogens on the panel. Outside flu season the
+      # denominator drops into single digits, so read these next to
+      # sensor.sentinella_swabs_tested rather than on their own.
+      - name: "RSV Switzerland positivity"
+        unique_id: rsv_ch_positivity
+        value_template: "{{ value_json.rsv_pct_positive }}"
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:lungs
+
+      - name: "COVID Switzerland positivity"
+        unique_id: covid_ch_positivity
+        value_template: "{{ value_json.covid_pct_positive }}"
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:virus-outline
+
+      - name: "Sentinella swabs tested"
+        unique_id: ch_sentinella_swabs
+        value_template: "{{ value_json.samples_tested | int(0) }}"
+        unit_of_measurement: "swabs/week"
+        state_class: measurement
+        icon: mdi:tube
+
+      # Wastewater: daily, independent of anyone seeing a doctor, and usually a
+      # few days ahead of the weekly figures above. Millions of gene copies per
+      # person per day, averaged over the plants reporting that day.
+      # Do not compare these three against each other — shedding differs by virus.
+      - name: "Flu Switzerland wastewater"
+        unique_id: flu_ch_wastewater
+        value_template: "{{ (value_json.wastewater_flu | float(0) / 1000) | round(2) }}"
+        unit_of_measurement: "Mcopies/person/day"
+        state_class: measurement
+        icon: mdi:water
+        json_attributes_path: "$"
+        json_attributes:
+          - wastewater_date
+          - wastewater_plants
+          - wastewater_flu_trend
+          - wastewater_rsv_trend
+          - wastewater_covid_trend
+
+      - name: "RSV Switzerland wastewater"
+        unique_id: rsv_ch_wastewater
+        value_template: "{{ (value_json.wastewater_rsv | float(0) / 1000) | round(2) }}"
+        unit_of_measurement: "Mcopies/person/day"
+        state_class: measurement
+        icon: mdi:water
+
+      - name: "COVID Switzerland wastewater"
+        unique_id: covid_ch_wastewater
+        value_template: "{{ (value_json.wastewater_covid | float(0) / 1000) | round(2) }}"
+        unit_of_measurement: "Mcopies/person/day"
+        state_class: measurement
+        icon: mdi:water
+
+template:
+  - binary_sensor:
+      - name: "Flu CH epidemic"
+        unique_id: flu_ch_epidemic
+        device_class: safety
+        state: "{{ state_attr('sensor.flu_switzerland_activity', 'epidemic') | bool(false) }}"
+
+automation:
+  - alias: "Flu CH — epidemic declared"
+    id: flu_ch_epidemic_declared
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.flu_ch_epidemic
+        from: "off"
+        to: "on"
+    actions:
+      - action: notify.signalhome
+        data:
+          title: "Flu epidemic in Switzerland"
+          message: >-
+            {{ state_attr('sensor.flu_switzerland_activity', 'week') }}:
+            {{ states('sensor.flu_switzerland_activity') }} consultations per 100k
+            — above the epidemic threshold of 68.
+
+  - alias: "Flu CH — stage changed"
+    id: flu_ch_stage_changed
+    triggers:
+      - trigger: state
+        entity_id: sensor.flu_switzerland_stage
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.from_state.state not in ['unknown', 'unavailable', None] }}"
+      - condition: template
+        value_template: "{{ trigger.from_state.state != trigger.to_state.state }}"
+    actions:
+      - action: notify.signalhome
+        data:
+          title: "Swiss flu level: {{ trigger.to_state.state }}"
+          message: >-
+            Was {{ trigger.from_state.state }}.
+            {{ state_attr('sensor.flu_switzerland_activity', 'stage_description') }}
+            ({{ states('sensor.flu_switzerland_activity') }} per 100k,
+            {{ state_attr('sensor.flu_switzerland_activity', 'trend') }})
